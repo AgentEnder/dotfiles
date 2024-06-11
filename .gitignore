@@ -7,3 +7,4 @@
 
 # .global.gitignore ignores all bashrc files, but we want to distribute a bashrc
 !.bashrc
+!.zshrc

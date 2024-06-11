@@ -2,12 +2,18 @@
 
 const { readFileSync, writeFileSync } = require("fs");
 const { join } = require("path");
+const checkExecutableOnPath = require("./lib/check-executable");
 
 function setupBashRc() {
     const pathToExtend = join(
         __dirname.replace(process.env.HOME, "~"),
         ".bashrc"
     );
+
+    if (!checkExecutableOnPath("bash")) {
+        console.log("⚠️ Bash not found in PATH, skipping `.bashrc` setup.");
+        return;
+    }
 
     const userBashRc = readFileOrEmpty(`${process.env.HOME}/.bashrc`, "utf8");
 
@@ -20,6 +26,31 @@ source ${pathToExtend}\n`
         console.log("✅ Added `.bashrc` extensions to user `.bashrc`.");
     } else {
         console.log("⏩ Skipping `.bashrc`, already setup.");
+    }
+}
+
+function setupZshRc() {
+    const pathToExtend = join(
+        __dirname.replace(process.env.HOME, "~"),
+        ".zshrc"
+    );
+
+    if (!checkExecutableOnPath("zsh")) {
+        console.log("⚠️ Zsh not found in PATH, skipping `.zshrc` setup.");
+        return;
+    }
+
+    const userZshRc = readFileOrEmpty(`${process.env.HOME}/.zshrc`, "utf8");
+
+    if (!userZshRc.includes(pathToExtend)) {
+        writeFileSync(
+            `${process.env.HOME}/.zshrc`,
+            `${userZshRc}
+source ${pathToExtend}\n`
+        );
+        console.log("✅ Added `.zshrc` extensions to user `.zshrc`.");
+    } else {
+        console.log("⏩ Skipping `.zshrc`, already setup.");
     }
 }
 
@@ -50,6 +81,11 @@ function setupGitConfig() {
         ".gitconfig"
     );
 
+    if (!checkExecutableOnPath("git")) {
+        console.log("⚠️ Git not found in PATH, skipping `.gitconfig` setup.");
+        return;
+    }
+
     const userGitConfig = readFileOrEmpty(
         `${process.env.HOME}/.gitconfig`,
         "utf8"
@@ -77,6 +113,7 @@ function readFileOrEmpty(path) {
 }
 
 function main() {
+    setupZshRc();
     setupBashRc();
     setupGitConfig();
     setupInputRc();

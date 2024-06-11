@@ -2,7 +2,7 @@
     defaultBranch = main
 [alias]
     amend = !bash -c "'f() { if [ $(git branch --points-at HEAD | wc -l) != 1 ]; then echo Current commit is relied on by other branches, avoid amending it.; exit 1; fi; if [ \"$0\" = "undo" ]; then git reset --soft \"HEAD@{1}\"; else git commit --amend --no-edit; fi }; f'"
-    nx-rebase = !bash -c "'git fetch upstream master:master -f && git rebase master'"
+    rbm = !bash -c "'git remote | grep upstream > /dev/null && ORIGIN=\"upstream\" || ORIGIN=\"origin\"; if [ $(git show-ref --quiet refs/heads/main) ]; then git fetch $ORIGIN main:main -f && git rebase main; else git fetch $ORIGIN master:master -f && git rebase master; fi'"
 [merge]
     conflictstyle = zdiff3
 [rebase]

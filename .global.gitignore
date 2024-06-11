@@ -2,3 +2,4 @@
 
 # Allows placing .bashrc inside folders to source when entering the folder.
 .bashrc
+.zshrc
