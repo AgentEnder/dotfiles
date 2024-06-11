@@ -1,0 +1,4 @@
+# Ignores the below files **everywhere**.
+
+# Allows placing .bashrc inside folders to source when entering the folder.
+.bashrc

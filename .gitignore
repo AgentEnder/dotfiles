@@ -1,0 +1,9 @@
+# Git Ignore is a bit weird in this repo.
+# We setup .global.gitignore to ignore some files globally
+# But we distribute some files that match the patterns in the global ignore.
+# So we also have this .gitignore, which is used for this repo specifically.
+# This is a dotfile that's in this repo, but its not meant to modify user's
+# configurations.
+
+# .global.gitignore ignores all bashrc files, but we want to distribute a bashrc
+!.bashrc

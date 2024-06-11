@@ -1,0 +1,16 @@
+[init]
+    defaultBranch = main
+[alias]
+    amend = !bash -c "'f() { if [ $(git branch --points-at HEAD | wc -l) != 1 ]; then echo Current commit is relied on by other branches, avoid amending it.; exit 1; fi; if [ \"$0\" = "undo" ]; then git reset --soft \"HEAD@{1}\"; else git commit --amend --no-edit; fi }; f'"
+    nx-rebase = !bash -c "'git fetch upstream master:master -f && git rebase master'"
+[merge]
+    conflictstyle = zdiff3
+[rebase]
+    autostash = true
+    autosquash = true
+[branch]
+	sort = -committerdate
+[diff]
+    algorithm = histogram
+[core]
+    excludesfile = ./.global.gitignore
