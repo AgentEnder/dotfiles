@@ -1,8 +1,8 @@
-SCRIPT_DIR=$( cd -- "$( dirname -- "${(%):-%N}" )" &> /dev/null && pwd )
+export DOTFILES_DIR_HOME=$( cd -- "$( dirname -- "${(%):-%N}" )" &> /dev/null && pwd )
 
-source $SCRIPT_DIR/.profile
+source $DOTFILES_DIR_HOME/.profile
 
-source $SCRIPT_DIR/git-prompt.zsh
+source $DOTFILES_DIR_HOME/git-prompt.zsh
 
 # Name: [bash-git-prompt](https://github.com/magicmonty/bash-git-prompt) clone
 # Description:
@@ -34,7 +34,7 @@ PROMPT=$'%(?..%F{red}%?%f · )%F{yellow}%B%~%b%F{white}$(gitprompt)\n%D{%H:%M} $
 RPROMPT=''
 
 function sourceLocalZshrc() {
-  if [ "$PWD" != $SCRIPT_DIR ] && [ "$PWD" != "$HOME" ] && [ -f '.zshrc' ]; then
+  if [ "$PWD" != $DOTFILES_DIR_HOME ] && [ "$PWD" != "$HOME" ] && [ -f '.zshrc' ]; then
     echo "Sourcing local .zshrc";
     source .zshrc
   fi      
