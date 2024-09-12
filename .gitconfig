@@ -3,6 +3,7 @@
 [alias]
     amend = !node $DOTFILES_DIR_HOME/lib/git-amend.js
     rbm = !node $DOTFILES_DIR_HOME/lib/git-rebase-main.js
+    publish-repro = !node $DOTFILES_DIR_HOME/lib/git-publish-repro.js
 [merge]
     conflictstyle = zdiff3
 [rebase]
