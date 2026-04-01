@@ -13,5 +13,3 @@
 	sort = -committerdate
 [diff]
     algorithm = histogram
-[core]
-    excludesfile = ./.global.gitignore
