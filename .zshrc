@@ -1,4 +1,5 @@
 export DOTFILES_DIR_HOME=$( cd -- "$( dirname -- "${(%):-%N}" )" &> /dev/null && pwd )
+export SHELL_NAME=zsh
 
 source $DOTFILES_DIR_HOME/.profile
 
@@ -33,22 +34,7 @@ ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg_bold[green]%}✔"
 PROMPT=$'%(?..%F{red}%?%f · )%F{yellow}%B%~%b%F{white}$(gitprompt)\n%D{%H:%M} $ '
 RPROMPT=''
 
-function sourceLocalZshrc() {
-  if [ "$PWD" != $DOTFILES_DIR_HOME ] && [ "$PWD" != "$HOME" ] && [ -f '.zshrc' ]; then
-    echo "Sourcing local .zshrc";
-    source .zshrc
-  fi      
-}
-
-# Updates `cd` to source local .bashrc if it exists
-function cd() {
-  builtin cd $@
-  sourceLocalZshrc
-}
-
-
-# Source local .bashrc on shell start
-sourceLocalZshrc
+function ppgrep() { pgrep "$@" | xargs --no-run-if-empty ps -p; }
 
 setopt extended_glob
 setopt dotglob
