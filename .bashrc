@@ -1,5 +1,7 @@
 export DOTFILES_DIR_HOME=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
+export PATH="$DOTFILES_DIR_HOME/scripts:$PATH"
+
 source $DOTFILES_DIR_HOME/git-prompt.sh
 
 PROMPT_COMMAND='PS1_CMD1=$(__git_ps1 " (%s)")'; PS1='\[\e[2m\]\w\[\e[0;3m\]${PS1_CMD1}\[\e[0m\]: '

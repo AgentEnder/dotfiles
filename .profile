@@ -1,5 +1,7 @@
 ## Holds settings that can be applied to all shells. POSIX-compliant.
 
+export PATH="$DOTFILES_DIR_HOME/scripts:$PATH"
+
 alias nx='npx nx'
 
 eval "$(ssh-agent -s)"
