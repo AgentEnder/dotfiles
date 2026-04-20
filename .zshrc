@@ -1,3 +1,5 @@
+autoload -U compinit && compinit
+
 export DOTFILES_DIR_HOME=$( cd -- "$( dirname -- "${(%):-%N}" )" &> /dev/null && pwd )
 export SHELL_NAME=zsh
 
