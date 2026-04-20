@@ -1,0 +1,17 @@
+## macOS-specific shell extensions. POSIX-compliant.
+## Sourced from .profile when `uname -s` is Darwin.
+
+## SSH agent: macOS runs a launchd-managed ssh-agent (com.openssh.ssh-agent).
+## SSH_AUTH_SOCK is inherited from the user session automatically — no
+## per-shell `eval "$(ssh-agent -s)"` needed.
+##
+## To get lazy, on-first-use key loading with Keychain-stored passphrase:
+##
+##   1. Add to ~/.ssh/config (or create via `Include` from dotfiles):
+##        Host *
+##          AddKeysToAgent yes
+##          UseKeychain yes
+##          IdentityFile ~/.ssh/id_ed25519
+##
+##   2. Seed the Keychain once (interactive, prompts for passphrase):
+##        ssh-add --apple-use-keychain ~/.ssh/id_ed25519

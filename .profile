@@ -2,11 +2,6 @@
 
 export PATH="$DOTFILES_DIR_HOME/scripts:$PATH"
 
-alias nx='npx nx'
-
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/id_ed25519
-
 ## Walks upward from $PWD and prepends every node_modules/.bin to PATH.
 ## Called on shell start and after each `cd`.
 refresh_node_bin_path() {
@@ -38,7 +33,7 @@ refresh_node_bin_path
 source_local_rc() {
   if [ "$PWD" != "$DOTFILES_DIR_HOME" ] && [ "$PWD" != "$HOME" ] && [ -f ".${SHELL_NAME}rc" ]; then
     echo "[dotfiles] Sourcing local .${SHELL_NAME}rc in $PWD" >&2
-    . ".${SHELL_NAME}rc"
+    . "./.${SHELL_NAME}rc"
   fi
 }
 
@@ -50,3 +45,13 @@ cd() {
 }
 
 source_local_rc
+
+## Load OS-specific extensions
+case "$(uname -s)" in
+  Darwin)
+    [ -f "$DOTFILES_DIR_HOME/.profile.osx" ] && . "$DOTFILES_DIR_HOME/.profile.osx"
+    ;;
+  Linux)
+    [ -f "$DOTFILES_DIR_HOME/.profile.linux" ] && . "$DOTFILES_DIR_HOME/.profile.linux"
+    ;;
+esac

@@ -1,0 +1,33 @@
+## Linux-specific shell extensions. POSIX-compliant.
+## Sourced from .profile when `uname -s` is Linux.
+
+## Lazy, single-shared ssh-agent:
+## - If an agent is already reachable (SSH_AUTH_SOCK inherited, or DE/WM
+##   started one — GNOME Keyring, KDE, systemd user service, etc.), reuse it.
+## - Otherwise source a cached env file from a previous login shell.
+## - Only spawn a new `ssh-agent` if neither is reachable.
+## - No eager `ssh-add`: with `AddKeysToAgent yes` in ~/.ssh/config, keys
+##   load on first use.
+##
+## `ssh-add -l` exit codes: 0=agent has keys, 1=agent running but empty,
+## 2=no agent reachable. Only code 2 means we need to start one.
+
+_ssh_env="$HOME/.ssh/agent.env"
+
+_ssh_agent_reachable() {
+  ssh-add -l >/dev/null 2>&1
+  [ $? -ne 2 ]
+}
+
+if ! _ssh_agent_reachable; then
+  if [ -f "$_ssh_env" ]; then
+    . "$_ssh_env" >/dev/null
+  fi
+  if ! _ssh_agent_reachable; then
+    (umask 077 && ssh-agent -s > "$_ssh_env")
+    . "$_ssh_env" >/dev/null
+  fi
+fi
+
+unset -f _ssh_agent_reachable
+unset _ssh_env

@@ -1,0 +1,20 @@
+# Managed by ~/dotfiles. Edit here, not in ~/.ssh/config.
+# ~/.ssh/config gets an `Include ~/dotfiles/ssh-config` line injected by
+# initialize.js; the host-specific bits in ~/.ssh/config stay machine-local.
+#
+# Platform notes:
+#   - macOS: UseKeychain pulls the identity passphrase from the login
+#     Keychain. Seed it once per machine with:
+#         ssh-add --apple-use-keychain ~/.ssh/id_ed25519
+#   - Linux/others: UseKeychain is unknown to OpenSSH; IgnoreUnknown
+#     below keeps ssh from erroring on that directive.
+#
+# AddKeysToAgent causes identities to load into the running ssh-agent on
+# first use (not at shell start), which is the whole point of Option A.
+
+IgnoreUnknown UseKeychain
+
+Host *
+  AddKeysToAgent yes
+  UseKeychain yes
+  IdentityFile ~/.ssh/id_ed25519

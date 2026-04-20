@@ -1,6 +1,6 @@
 // Sets up various files in ~/ to extend from these files.
 
-const { readFileSync, writeFileSync } = require("fs");
+const { readFileSync, writeFileSync, mkdirSync, chmodSync } = require("fs");
 const { join } = require("path");
 const checkExecutableOnPath = require("./lib/check-executable");
 
@@ -104,6 +104,35 @@ function setupGitConfig() {
   }
 }
 
+function setupSshConfig() {
+  const pathToExtend = join(dotfilesDirectory, "ssh-config");
+  const includeLine = `Include ${pathToExtend}`;
+
+  if (!checkExecutableOnPath("ssh")) {
+    console.log("⚠️ ssh not found in PATH, skipping ssh config setup.");
+    return;
+  }
+
+  const sshDir = `${process.env.HOME}/.ssh`;
+  const sshConfigPath = `${sshDir}/config`;
+  mkdirSync(sshDir, { recursive: true, mode: 0o700 });
+
+  const userSshConfig = readFileOrEmpty(sshConfigPath);
+
+  if (userSshConfig.includes(pathToExtend)) {
+    console.log("⏩ Skipping ssh config, already setup.");
+    return;
+  }
+
+  // SSH uses first-match for single-valued options. Prepend so our `Host *`
+  // defaults (AddKeysToAgent, UseKeychain, IdentityFile) apply before any
+  // existing host-specific blocks override them.
+  const trailing = userSshConfig.length === 0 || userSshConfig.endsWith("\n") ? "" : "\n";
+  writeFileSync(sshConfigPath, `${includeLine}\n\n${userSshConfig}${trailing}`);
+  chmodSync(sshConfigPath, 0o600);
+  console.log("✅ Added ssh config extension to ~/.ssh/config.");
+}
+
 function readFileOrEmpty(path) {
   try {
     return readFileSync(path, "utf8");
@@ -117,6 +146,7 @@ function main() {
   setupBashRc();
   setupGitConfig();
   setupInputRc();
+  setupSshConfig();
 }
 
 main();
