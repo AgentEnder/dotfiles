@@ -7,6 +7,15 @@ alias nx='npx nx'
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_ed25519
 
+## Runs a command with GitHub CLI auth exported for tools that expect token env vars.
+with_gh_auth() {
+  _gh_token=$(gh auth token) || return
+  GITHUB_TOKEN="$_gh_token" GH_TOKEN="$_gh_token" "$@"
+}
+
+alias codex-gh='with_gh_auth codex'
+alias claude-gh='with_gh_auth claude'
+
 ## Walks upward from $PWD and prepends every node_modules/.bin to PATH.
 ## Called on shell start and after each `cd`.
 refresh_node_bin_path() {
