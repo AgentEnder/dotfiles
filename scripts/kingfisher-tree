@@ -1,0 +1,234 @@
+#!/usr/bin/env python3
+"""Render Kingfisher findings as an ASCII file tree.
+
+Reads a Kingfisher JSON report (from a file argument or stdin) and prints a
+tree of directories -> files -> findings, where each finding is a leaf under
+the file that contains it.
+
+    kingfisher scan ~ -f json | kingfisher-tree
+    kingfisher-tree report.json
+    kingfisher-tree report.json --show-secret
+
+When a report file is given as an argument, findings that point back at that
+same file are dropped automatically -- re-scanning a directory after writing
+report.json there otherwise rediscovers the previous run's snippets inside it.
+Use --exclude PATH to drop additional files (e.g. when piping from stdin).
+
+The on-disk JSON report is {"findings": [...], "metadata": {...}}. When piped
+from stdout, Kingfisher appends a summary object (whose "findings" is an int),
+so the loader tolerates multiple concatenated JSON values and JSON Lines too.
+"""
+import argparse
+import json
+import os
+import sys
+
+# --- color -----------------------------------------------------------------
+COLORS = {"dir": "1;36", "file": "1", "rule": "0", "dim": "2",
+          "active": "1;31", "inactive": "33", "muted": "2"}
+_enabled = False
+
+
+def paint(key, text):
+    if not _enabled or not text:
+        return text
+    return f"\033[{COLORS[key]}m{text}\033[0m"
+
+
+def dim(text):
+    return paint("dim", text)
+
+
+def status_key(status):
+    s = status.lower()
+    if "active" in s and "inactive" not in s:
+        return "active"
+    if "inactive" in s:
+        return "inactive"
+    return "muted"
+
+
+# --- loading ---------------------------------------------------------------
+def load_findings(raw):
+    findings = []
+
+    def take(obj):
+        if isinstance(obj, dict):
+            inner = obj.get("findings")
+            if isinstance(inner, list):
+                findings.extend(inner)
+            elif "finding" in obj or "rule" in obj:
+                findings.append(obj)
+        elif isinstance(obj, list):
+            for item in obj:
+                take(item)
+
+    decoder = json.JSONDecoder()
+    idx, n = 0, len(raw)
+    while idx < n:
+        while idx < n and raw[idx].isspace():
+            idx += 1
+        if idx >= n:
+            break
+        try:
+            obj, end = decoder.raw_decode(raw, idx)
+        except json.JSONDecodeError:
+            nl = raw.find("\n", idx)
+            if nl == -1:
+                break
+            idx = nl + 1
+            continue
+        take(obj)
+        idx = end
+    return findings
+
+
+def normalize(f):
+    fi = f.get("finding") if isinstance(f.get("finding"), dict) else f
+    rule = f.get("rule") or {}
+    validation = fi.get("validation") or {}
+    return {
+        "path": fi.get("path") or "(unknown path)",
+        "line": fi.get("line"),
+        "rule": rule.get("name") or rule.get("id") or "secret",
+        "confidence": fi.get("confidence") or "",
+        "validation": validation.get("status") or "",
+        "snippet": (fi.get("snippet") or "").replace("\n", " ").strip(),
+    }
+
+
+# --- tree ------------------------------------------------------------------
+class Node:
+    __slots__ = ("dirs", "files")
+
+    def __init__(self):
+        self.dirs = {}   # name -> Node
+        self.files = {}  # name -> [record]
+
+
+def common_root(paths):
+    if len(paths) == 1:
+        return os.path.dirname(paths[0])
+    try:
+        root = os.path.commonpath(paths)
+    except ValueError:
+        return ""               # mixed absolute/relative; fall back to no root
+    return os.path.dirname(root) if root in set(paths) else root
+
+
+def build(records, root):
+    tree = Node()
+    for r in records:
+        rel = os.path.relpath(r["path"], root) if root else r["path"]
+        *dirs, name = rel.split(os.sep)
+        node = tree
+        for d in dirs:
+            node = node.dirs.setdefault(d, Node())
+        node.files.setdefault(name, []).append(r)
+    return tree
+
+
+def collapse(name, node):
+    """Merge single-child directory chains: a/ -> b/ -> file becomes a/b/."""
+    while len(node.dirs) == 1 and not node.files:
+        (child_name, child), = node.dirs.items()
+        name = name + os.sep + child_name
+        node = child
+    node.dirs = {cn: cnode for cn, cnode in
+                 (collapse(k, v) for k, v in node.dirs.items())}
+    return name, node
+
+
+def count(node):
+    return (sum(len(v) for v in node.files.values())
+            + sum(count(c) for c in node.dirs.values()))
+
+
+def finding_label(r, show_secret):
+    meta = []
+    if r["line"] is not None:
+        meta.append(f"L{r['line']}")
+    if r["confidence"]:
+        meta.append(r["confidence"])
+    label = paint("rule", r["rule"])
+    if meta:
+        label += "  " + dim(" · ".join(meta))
+    if r["validation"]:
+        label += dim(" · ") + paint(status_key(r["validation"]), r["validation"])
+    if show_secret and r["snippet"]:
+        snip = r["snippet"]
+        if len(snip) > 80:
+            snip = snip[:77] + "..."
+        label += "  " + dim(snip)
+    return label
+
+
+def render(node, show_secret, prefix=""):
+    # Worst-first at every layer: dirs and files interleaved, descending by
+    # finding count, ties broken alphabetically so runs are deterministic.
+    entries = (
+        [("dir", n, node.dirs[n], count(node.dirs[n])) for n in node.dirs]
+        + [("file", n, node.files[n], len(node.files[n])) for n in node.files]
+    )
+    entries.sort(key=lambda e: (-e[3], e[1]))
+    for i, (kind, name, payload, n) in enumerate(entries):
+        last = i == len(entries) - 1
+        branch = "└── " if last else "├── "
+        cont = prefix + ("    " if last else "│   ")
+        if kind == "dir":
+            print(f"{prefix}{branch}{paint('dir', name + '/')}"
+                  f"{dim(f'  ({n})')}")
+            render(payload, show_secret, cont)
+        else:
+            recs = sorted(payload, key=lambda r: (r["line"] or 0))
+            print(f"{prefix}{branch}{paint('file', name)}"
+                  f"{dim(f'  ({n})')}")
+            for j, r in enumerate(recs):
+                fbranch = "└── " if j == len(recs) - 1 else "├── "
+                print(f"{cont}{fbranch}{finding_label(r, show_secret)}")
+
+
+def main():
+    global _enabled
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("report", nargs="?", help="JSON report file (default: stdin)")
+    ap.add_argument("--show-secret", action="store_true",
+                    help="reveal the matched snippet (redacted by default)")
+    ap.add_argument("--no-color", action="store_true", help="disable ANSI color")
+    ap.add_argument("--exclude", action="append", metavar="PATH", default=[],
+                    help="drop findings whose file matches PATH (repeatable)")
+    args = ap.parse_args()
+
+    raw = (open(args.report, encoding="utf-8").read() if args.report
+           else sys.stdin.read())
+    _enabled = (not args.no_color and os.environ.get("NO_COLOR") is None
+                and sys.stdout.isatty())
+
+    # Always drop findings that point at the report file itself: re-scanning a
+    # directory after writing report.json there makes run N+1 rediscover run N's
+    # snippets inside the report. realpath() so /tmp vs /private/tmp etc. match.
+    excluded = {os.path.realpath(p) for p in args.exclude}
+    if args.report:
+        excluded.add(os.path.realpath(args.report))
+
+    records = [r for r in (normalize(f) for f in load_findings(raw))
+               if os.path.realpath(r["path"]) not in excluded]
+    if not records:
+        print("No findings.")
+        return
+
+    root = common_root([r["path"] for r in records])
+    tree = build(records, root)
+    tree.dirs = {cn: cnode for cn, cnode in
+                 (collapse(k, v) for k, v in tree.dirs.items())}
+
+    files = len({r["path"] for r in records})
+    header = (root or ".") + "/"
+    print(f"{paint('dir', header)}"
+          f"{dim(f'  ({len(records)} findings in {files} files)')}")
+    render(tree, args.show_secret)
+
+
+if __name__ == "__main__":
+    main()

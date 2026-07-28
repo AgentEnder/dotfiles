@@ -1,0 +1,52 @@
+#!/usr/bin/env sh
+# kingfisher-scan — `kingfisher scan` with our shared at-rest policy baked in.
+#
+# Replaces the kingfisher-config.yaml + .profile alias pair: one self-contained
+# script that's easy to copy onto another machine. Args you pass are appended
+# after the defaults, and clap's last-wins behavior means your override beats
+# the default (e.g. `kingfisher-scan ~/repo --git-history full` re-enables
+# history scanning for that run).
+#
+# Why each flag (full rationale lived in the old YAML; condensed here):
+#   --git-history none       working trees only; dodges gitoxide OOM on huge blobs.
+#   --jobs 8                 below the default 28; fewer simultaneous mmaps means
+#                            fewer SIGBUS races on files rewritten mid-scan.
+#   --confidence medium      CLI default, but pinned explicitly: `high` silently
+#                            hides medium-confidence rules (.env DB URLs, generic
+#                            tokens) that we want for an at-rest sweep.
+#   --no-validate            jsonwebtoken 10.4 panics in the validation phase when
+#                            both rust_crypto and aws_lc_rs backends are active
+#                            (every v1.100.0 build hits this). Drop once fixed.
+#   --no-extract-archives    in-memory decompression is slow and the source of
+#                            the truncation warnings/crashes on cache trees.
+#   --no-binary              every secret scanner — kingfisher included — ships
+#                            example secrets in its own binary; scanning binaries
+#                            re-discovers them. Sticky-on: no CLI flag re-enables.
+#   --exclude ...            volatile cache / package-manager / generated trees;
+#                            the trigger for the original bus errors under $HOME.
+
+exec kingfisher scan \
+  --git-history none \
+  --jobs 8 \
+  --confidence medium \
+  --no-extract-archives \
+  --no-binary \
+  --access-map \
+  --exclude '**/Library/Caches/**' \
+  --exclude '**/Caches/**' \
+  --exclude '**/.cache/**' \
+  --exclude '**/.sdkman/**' \
+  --exclude '**/go/pkg/mod/**' \
+  --exclude '**/node_modules/**' \
+  --exclude '**/.gradle/**' \
+  --exclude '**/.npm/**' \
+  --exclude '**/Downloads/**' \
+  --exclude '**/.nx/cache/**' \
+  --exclude '**/pnpm/store/**' \
+  --exclude '**/.rustup/toolchains/**' \
+  --exclude '**/.cargo/registry/**' \
+  --exclude '**/mise/installs/**' \
+  --exclude '**/.bun/install/**' \
+  --exclude '**/local-registry/storage/**' \
+  --exclude '**/.cargo/git/**' \
+  "$@"
