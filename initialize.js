@@ -6,10 +6,39 @@ const checkExecutableOnPath = require("./lib/check-executable");
 
 const dotfilesDirectory = __dirname.replace(process.env.HOME, "~");
 
-function setupBashRc() {
+/**
+ * Tools these dotfiles lean on. `required` ones make setup meaningless when
+ * absent; the rest degrade quietly (the tmux wrapper no-ops without tmux).
+ */
+const TOOLS = [
+  { exe: "zsh", why: "primary shell (.zshrc extensions)", required: true },
+  { exe: "git", why: "aliases + .gitconfig include", required: true },
+  { exe: "ssh", why: "ssh-config include", required: true },
+  { exe: "bash", why: ".bashrc extensions" },
+  { exe: "tmux", why: "claude wrapper (claude/tmux-wrapper.zsh)" },
+  { exe: "mise", why: "runtime versions (activated in .profile)" },
+];
+
+async function checkTools() {
+  const results = await Promise.all(
+    TOOLS.map(async (t) => ({ ...t, found: !!(await checkExecutableOnPath(t.exe)) }))
+  );
+  const missing = results.filter((t) => !t.found);
+
+  if (missing.length === 0) {
+    console.log(`✅ Tools check: all ${results.length} present.`);
+    return;
+  }
+  for (const t of missing) {
+    const mark = t.required ? "❌" : "⚠️ ";
+    console.log(`${mark} Missing \`${t.exe}\` — ${t.why}.`);
+  }
+}
+
+async function setupBashRc() {
   const pathToExtend = join(dotfilesDirectory, ".bashrc");
 
-  if (!checkExecutableOnPath("bash")) {
+  if (!(await checkExecutableOnPath("bash"))) {
     console.log("⚠️ Bash not found in PATH, skipping `.bashrc` setup.");
     return;
   }
@@ -28,10 +57,10 @@ source ${pathToExtend}\n`
   }
 }
 
-function setupZshRc() {
+async function setupZshRc() {
   const pathToExtend = join(dotfilesDirectory, ".zshrc");
 
-  if (!checkExecutableOnPath("zsh")) {
+  if (!(await checkExecutableOnPath("zsh"))) {
     console.log("⚠️ Zsh not found in PATH, skipping `.zshrc` setup.");
     return;
   }
@@ -68,10 +97,10 @@ $include ${pathToExtend}\n`
   }
 }
 
-function setupGitConfig() {
+async function setupGitConfig() {
   const pathToExtend = join(dotfilesDirectory, ".gitconfig");
 
-  if (!checkExecutableOnPath("git")) {
+  if (!(await checkExecutableOnPath("git"))) {
     console.log("⚠️ Git not found in PATH, skipping `.gitconfig` setup.");
     return;
   }
@@ -104,11 +133,11 @@ function setupGitConfig() {
   }
 }
 
-function setupSshConfig() {
+async function setupSshConfig() {
   const pathToExtend = join(dotfilesDirectory, "ssh-config");
   const includeLine = `Include ${pathToExtend}`;
 
-  if (!checkExecutableOnPath("ssh")) {
+  if (!(await checkExecutableOnPath("ssh"))) {
     console.log("⚠️ ssh not found in PATH, skipping ssh config setup.");
     return;
   }
@@ -141,12 +170,16 @@ function readFileOrEmpty(path) {
   }
 }
 
-function main() {
-  setupZshRc();
-  setupBashRc();
-  setupGitConfig();
+async function main() {
+  await checkTools();
+  await setupZshRc();
+  await setupBashRc();
+  await setupGitConfig();
   setupInputRc();
-  setupSshConfig();
+  await setupSshConfig();
 }
 
-main();
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
