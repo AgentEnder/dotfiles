@@ -2,6 +2,7 @@
     defaultBranch = main
 [alias]
     amend = !node $DOTFILES_DIR_HOME/lib/git-amend.js
+    com = !node $DOTFILES_DIR_HOME/lib/git-checkout-main.js
     rbm = !node $DOTFILES_DIR_HOME/lib/git-rebase-main.js
     publish-repro = !node $DOTFILES_DIR_HOME/lib/git-publish-repro.js
 [merge]
