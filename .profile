@@ -71,3 +71,15 @@ case "$(uname -s)" in
     [ -f "$DOTFILES_DIR_HOME/.profile.linux" ] && . "$DOTFILES_DIR_HOME/.profile.linux"
     ;;
 esac
+
+## mise — runtime version manager (node, python, …).
+## Installed to ~/.local/bin, which is not on PATH until mise itself activates,
+## so fall back to that path when `command -v` comes up empty. $MISE_SHELL is
+## set by the activation snippet; re-running it in a nested shell is wasteful.
+if [ -z "$MISE_SHELL" ]; then
+  _mise=$(command -v mise 2>/dev/null) || _mise="$HOME/.local/bin/mise"
+  if [ -x "$_mise" ]; then
+    eval "$("$_mise" activate "${SHELL_NAME:-bash}")"
+  fi
+  unset _mise
+fi
