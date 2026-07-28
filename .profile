@@ -4,8 +4,10 @@ export PATH="$DOTFILES_DIR_HOME/scripts:$PATH"
 
 alias nx='npx nx'
 
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/id_ed25519
+## SSH agent setup is OS-specific — see .profile.osx / .profile.linux
+## (loaded at the bottom of this file). Don't add an unconditional
+## `eval "$(ssh-agent -s)"` here: this file is sourced per-shell and
+## would leak an agent process for every terminal.
 
 ## Runs a command with GitHub CLI auth exported for tools that expect token env vars.
 with_gh_auth() {
@@ -15,6 +17,7 @@ with_gh_auth() {
 
 alias codex-gh='with_gh_auth codex'
 alias claude-gh='with_gh_auth claude'
+
 ## Walks upward from $PWD and prepends every node_modules/.bin to PATH.
 ## Called on shell start and after each `cd`.
 refresh_node_bin_path() {
