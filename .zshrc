@@ -39,9 +39,14 @@ RPROMPT=''
 function ppgrep() { pgrep "$@" | xargs --no-run-if-empty ps -p; }
 
 ## Run interactive `claude` inside tmux. Pipes, hooks, MCP servers and Claude's
-## own Bash tool reach the real binary untouched. The wrapper no-ops when tmux
-## is absent. Escape hatch: CLAUDE_NO_TMUX=1
-source $DOTFILES_DIR_HOME/claude/tmux-wrapper.zsh
+## own Bash tool reach the real binary untouched. Herdr cannot inspect nested
+## tmux panes, so use the real binary there. Escape hatch: CLAUDE_NO_TMUX=1
+if [[ ${HERDR_ENV:-} != 1 ]]; then
+  source $DOTFILES_DIR_HOME/claude/tmux-wrapper.zsh
+fi
+
+## Badged Chrome clones (own Cmd+Tab icons) + the `chrome-cdp` launcher.
+source $DOTFILES_DIR_HOME/chrome/instances.zsh
 
 setopt extended_glob
 setopt dotglob
