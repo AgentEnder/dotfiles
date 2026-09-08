@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Rebuild ~/.dotnet-root: one .NET install root that exposes every SDK and
+# runtime mise has, so `dotnet --list-sdks` behaves like a normal install and
+# `global.json` can select between them.
+#
+# Why this is needed: mise installs each .NET version into its own isolated
+# root, so an active dotnet only ever sees its own SDK and its own runtimes.
+# That is what makes `mise.toml` pinning work, but it also means
+# `dotnet --list-sdks` shows exactly one entry and a tool targeting an older
+# TFM cannot find a runtime to run on.
+#
+# Everything here is a symlink except the `dotnet` host itself, which must be a
+# real copy: the muxer resolves its install root from the realpath of its own
+# binary and ignores DOTNET_ROOT when doing so, so a symlinked host would
+# resolve straight back to the single version it points at.
+#
+# Re-run after `mise install dotnet@<version>` or `mise uninstall dotnet@...`.
+set -euo pipefail
+
+INSTALLS="${MISE_DATA_DIR:-$HOME/.local/share/mise}/installs/dotnet"
+ROOT="${DOTNET_ROOT_MERGED:-$HOME/.dotnet-root}"
+
+[ -d "$INSTALLS" ] || { echo "no mise dotnet installs at $INSTALLS" >&2; exit 1; }
+
+rm -rf "$ROOT"
+mkdir -p "$ROOT"/{sdk,host/fxr,shared/Microsoft.NETCore.App,shared/Microsoft.AspNetCore.App,packs,templates,sdk-manifests}
+
+newest=""
+count=0
+# Version-sorted so the last real install wins as the host; a newer host runs
+# older runtimes, but not the reverse.
+for version in $(ls "$INSTALLS" | grep -E '^[0-9]+\.' | sort -V); do
+  install="$INSTALLS/$version"
+  [ -x "$install/dotnet" ] || continue
+  # mise keeps major-version aliases (9, 10) beside the real installs; they are
+  # symlinks to the same trees, so counting them would overstate the merge.
+  [ -L "$install" ] && continue
+  newest="$install"
+  count=$((count + 1))
+  for group in sdk host/fxr shared/Microsoft.NETCore.App shared/Microsoft.AspNetCore.App packs templates sdk-manifests; do
+    [ -d "$install/$group" ] || continue
+    for entry in "$install/$group"/*; do
+      [ -e "$entry" ] && ln -sfn "$entry" "$ROOT/$group/$(basename "$entry")"
+    done
+  done
+done
+
+[ -n "$newest" ] || { echo "no usable dotnet install found in $INSTALLS" >&2; exit 1; }
+
+cp "$newest/dotnet" "$ROOT/dotnet"
+chmod +x "$ROOT/dotnet"
+
+echo "merged $count dotnet install(s) into $ROOT (host from $(basename "$newest"))"
+"$ROOT/dotnet" --list-sdks
