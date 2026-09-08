@@ -1,0 +1,18 @@
+{
+  "//": "Copy to `config.local.json`, which is not committed because these paths and modes differ per machine.",
+
+  "//skillTargets": [
+    "Extra directories to install `skills/` into. A leading `~` is expanded, and the parent",
+    "directory has to already exist. Claude and Codex are handled automatically wherever their",
+    "CLI is on PATH, so this is for anything else that reads a directory of skill directories.",
+    "",
+    "mode `link` (the default) symlinks, so edits in `skills/` are live everywhere.",
+    "mode `copy` writes real files, for a host that ships the directory somewhere this machine's",
+    "paths cannot reach. brain is the case that needs it: its box materializer recreates a",
+    "symlink verbatim, so an absolute link into ~/dotfiles dangles inside a VM or container",
+    "guest. A copy survives. Re-run initialize.js to refresh it."
+  ],
+  "skillTargets": [
+    { "dir": "~/brain-content/sandbox/skills", "mode": "copy" }
+  ]
+}
