@@ -1,0 +1,6 @@
+# Secondary Chrome instances that chrome-skin-sync keeps in step with Chrome.
+# Format:  <App name (no .app)> | <badge png, relative to this directory>
+# Add a line here and the LaunchAgent picks it up on the next Chrome update.
+Chrome FamilySearch | familysearch.png
+Chrome MyHeritage   | myheritage.png
+Chrome Automation   | automation.png

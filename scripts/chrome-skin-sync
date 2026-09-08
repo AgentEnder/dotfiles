@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# chrome-skin-sync — re-clone every skinned Chrome instance after Chrome updates.
+#
+# Driven by the LaunchAgent com.craigory.chrome-skin-sync, which watches Chrome
+# Beta's Info.plist (rewritten by the updater on update) with a daily backstop.
+#
+# Each clone does carry its own GoogleUpdater and will update itself — the
+# clones are not stranded on an old build, and a clone can even run AHEAD of the
+# app it was cloned from. This script exists to pull them back into step, so
+# that the version chrome-cdp reports is the version chrome-skin last built.
+#
+# The source is Chrome BETA, deliberately: a clone of stable would share
+# com.google.Chrome with the real browser and could outrank it as the system
+# https handler. chrome-skin refuses a stable source for that reason.
+#
+# Deliberately exits 0 even when an instance fails: a clone that is RUNNING
+# cannot be replaced, and that is the common case. Failing loudly would make
+# launchd retry-thrash; the daily backstop retries once it has been quit.
+set -uo pipefail
+
+export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BADGES="$HERE/lib/chrome-badges"
+MANIFEST="$BADGES/manifest.txt"
+LOG="$HOME/Library/Logs/chrome-skin-sync.log"
+
+mkdir -p "$(dirname "$LOG")"
+exec >>"$LOG" 2>&1
+
+say() { printf '%s  %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"; }
+
+SRC="${CHROME_SKIN_SRC:-/Applications/Google Chrome Beta.app}"
+[ -d "$SRC" ] || { say "FATAL: $SRC missing, nothing to sync"; exit 0; }
+SRC_VER="$(defaults read "$SRC/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo unknown)"
+
+[ -f "$MANIFEST" ] || { say "FATAL: no manifest at $MANIFEST"; exit 0; }
+
+say "sync start (Chrome $SRC_VER)"
+rebuilt=0; current=0; skipped=0
+
+while IFS='|' read -r name badge; do
+  name="${name#"${name%%[![:space:]]*}"}"; name="${name%"${name##*[![:space:]]}"}"
+  badge="${badge#"${badge%%[![:space:]]*}"}"; badge="${badge%"${badge##*[![:space:]]}"}"
+  [ -z "$name" ] && continue
+  case "$name" in \#*) continue ;; esac
+
+  if out=$("$HERE/chrome-skin" "$name" "$BADGES/$badge" 2>&1); then
+    case "$out" in
+      *"up to date"*) current=$((current+1)) ;;
+      *)              say "rebuilt $name"; rebuilt=$((rebuilt+1)) ;;
+    esac
+  else
+    say "SKIPPED $name — ${out##*chrome-skin: }"
+    skipped=$((skipped+1))
+  fi
+done < "$MANIFEST"
+
+say "sync done ($rebuilt rebuilt, $current already current, $skipped skipped)"
+exit 0

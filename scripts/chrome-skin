@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+# chrome-skin — give a secondary Chrome instance its own Cmd+Tab icon.
+#
+#   chrome-skin [-f] <AppName> <badge.png>
+#     -f  rebuild even when already current (use after changing a badge)
+#
+# WHY THIS WORKS
+# Clones /Applications/Google Chrome Beta.app (APFS clonefile: instant, ~0 bytes).
+# The clone is the *identical* notarized Google binary, so it keeps Chrome
+# branding, its own "Chrome Beta Safe Storage" keychain item, and does NOT trip
+# Google's "this browser may not be secure" sign-in gate.
+#
+# WHY BETA AND NOT STABLE
+# LaunchServices resolves the default-browser setting to a bundle *identifier*
+# (com.google.chrome), then picks whichever claimant has the highest
+# CFBundleVersion. Clones of stable share that identifier, and each clone
+# inherits its own GoogleUpdater and updates itself independently — so a clone
+# that got ahead of /Applications/Google Chrome.app silently became the system
+# https handler, and every Cmd-clicked terminal link and Slack link opened in a
+# CDP automation profile instead of the real browser. Beta's identifier is
+# com.google.Chrome.beta, so a clone is never a candidate for the stable
+# default handler and the collision is structurally impossible.
+#
+# Do NOT instead "fix" this by editing CFBundleIdentifier in the clone.
+# Info.plist is sealed by the code signature's own Info.plist slot — it is
+# `omit`ed from CodeResources precisely because it is covered there — so the
+# edit fails both `codesign --verify` and spctl, and no ad-hoc re-sign recovers
+# it: the versioned Google Chrome Framework then refuses to dlopen with
+# "mapping process and mapped file have different Team IDs".
+#
+# Do NOT delete the clone's GoogleUpdater.app to stop it drifting either. It
+# lives under Contents/Frameworks/.../Helpers, which IS sealed (nested=true),
+# so removing it breaks the bundle the same way. Version drift is handled by
+# chrome-skin-sync rebuilding, and surfaced by chrome-cdp at launch.
+#
+# The icon is a Finder custom icon: an `Icon\r` file at the BUNDLE ROOT, beside
+# Contents/. _CodeSignature/CodeResources only seals Contents/, so the signature
+# stays valid. Editing Contents/Resources/app.icns instead breaks the resource
+# seal, and macOS 13+ enforces that on provenance-tracked notarized apps — the
+# bundle gets refused at launch as "damaged".
+#
+# WHY IT STAGES INSTEAD OF EDITING IN PLACE
+# macOS 14+ App Management (TCC) denies writes into an app bundle that
+# LaunchServices has registered, unless the calling terminal holds the App
+# Management right — `touch "/Applications/Some.app/probe"` returns EPERM.
+# Deleting a whole bundle is still allowed. So every run builds a complete
+# bundle in a staging dir (unregistered, therefore writable) and swaps it in.
+# Never modify $DEST directly; it will silently fail once it has been launched.
+set -euo pipefail
+
+SRC="${CHROME_SKIN_SRC:-/Applications/Google Chrome Beta.app}"
+LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib"
+
+die() { printf 'chrome-skin: %s\n' "$1" >&2; exit 1; }
+
+FORCE=0
+[ "${1:-}" = "-f" ] && { FORCE=1; shift; }
+[ $# -eq 2 ] || die "usage: chrome-skin [-f] <AppName> <badge.png>"
+NAME="$1"; BADGE="$2"
+DEST="/Applications/${NAME}.app"
+ICON_FILE="$DEST/Icon"$'\r'
+
+[ -d "$SRC" ]   || die "not found: $SRC (install it: brew install --cask google-chrome@beta)"
+[ -f "$BADGE" ] || die "badge not found: $BADGE"
+
+# Guard the invariant the whole design rests on: a clone of stable Chrome shares
+# com.google.Chrome with the real browser and can outrank it as the system https
+# handler. See WHY BETA AND NOT STABLE above.
+SRC_ID="$(defaults read "$SRC/Contents/Info" CFBundleIdentifier 2>/dev/null || echo unknown)"
+if [ "$SRC_ID" = "com.google.Chrome" ]; then
+  die "refusing to clone stable Chrome ($SRC): bundle id collides with the default browser"
+fi
+for t in magick iconutil swift; do
+  command -v "$t" >/dev/null || die "missing dependency: $t"
+done
+
+ver() { defaults read "$1/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo none; }
+SRC_VER="$(ver "$SRC")"
+
+if [ "$FORCE" -eq 0 ] && [ "$(ver "$DEST")" = "$SRC_VER" ] && [ -f "$ICON_FILE" ]; then
+  echo "==> $NAME up to date (Chrome $SRC_VER)"; exit 0
+fi
+
+# Staging must sit on the same APFS volume as /Applications so that cp -c can
+# clonefile and the final mv is a rename rather than a 2 GB copy.
+STAGE="$(mktemp -d /tmp/chrome-skin.XXXXXXXX)"
+trap 'rm -rf "$STAGE"' EXIT
+NEW="$STAGE/${NAME}.app"
+
+echo "==> cloning Chrome $SRC_VER -> $NAME"
+cp -c -R "$SRC" "$NEW"
+
+# --- build the badged icon ---------------------------------------------------
+iconutil -c iconset "$SRC/Contents/Resources/app.icns" -o "$STAGE/base.iconset"
+BASE="$STAGE/base.iconset/icon_128x128@2x.png"   # 256px, largest Chrome ships
+[ -f "$BASE" ] || die "could not extract Chrome's 256px icon"
+
+# White disc keeps the badge legible against Chrome's four-colour pinwheel.
+magick "$BASE" \
+  \( -size 140x140 xc:none -fill white -stroke '#0000002e' -strokewidth 3 \
+     -draw "circle 70,70 70,4" \) \
+  -gravity southeast -geometry +2+2 -composite \
+  \( "$BADGE" -background none -resize 108x108 -gravity center -extent 108x108 \) \
+  -gravity southeast -geometry +18+18 -composite \
+  "$STAGE/badged.png"
+
+mkdir -p "$STAGE/out.iconset"
+while read -r sz nm; do
+  magick "$STAGE/badged.png" -resize "${sz}x${sz}" "$STAGE/out.iconset/${nm}.png"
+done <<'SIZES'
+16 icon_16x16
+32 icon_16x16@2x
+32 icon_32x32
+64 icon_32x32@2x
+128 icon_128x128
+256 icon_128x128@2x
+256 icon_256x256
+512 icon_256x256@2x
+512 icon_512x512
+SIZES
+iconutil -c icns "$STAGE/out.iconset" -o "$STAGE/final.icns"
+
+swift "$LIB/seticon.swift" "$STAGE/final.icns" "$NEW" || die "setIcon failed on staging copy"
+[ -f "$NEW/Icon"$'\r' ] || die "no Icon file produced in staging copy"
+
+codesign --verify "$NEW" 2>/dev/null || die "staging copy failed signature check; not installing"
+
+# --- swap in -----------------------------------------------------------------
+if pgrep -f "${DEST}/Contents/MacOS/" >/dev/null 2>&1; then
+  die "$NAME is running — quit it, then re-run"
+fi
+rm -rf "$DEST"
+mv "$NEW" "$DEST"
+
+[ -f "$ICON_FILE" ] || die "icon did not survive the move into /Applications"
+codesign --verify "$DEST" 2>/dev/null || die "signature broke during install — delete $DEST"
+echo "==> $NAME ready (Chrome $SRC_VER, signature valid)"
