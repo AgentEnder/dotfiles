@@ -4,7 +4,7 @@ The default failure is length. Every draft an agent hands over is roughly twice 
 
 ## The method
 
-Not a word count. Three questions, then iterate:
+The method is not a word count. Three questions, then iterate:
 
 1. **What is this text for?** One action, one decision, one answer. Name it before you cut.
 2. **Who reads it, and what do they already know?** Detail they can see for themselves, or that does not change what they do, is overexplaining.
@@ -46,6 +46,8 @@ Work top to bottom. Each pass is mechanical enough that you do not need taste fo
 - Two sentences that share a subject usually want to be one. He asked for exactly this: _"I'd combine these two paragraphs."_
 - If a sentence needs a comma-spliced aside to make sense, split it or cut the aside.
 - Watch for the sentence that sounds profound and says nothing. _"Building the front end is what you actually run, and everything else is a consequence of it"_ got flagged as _"pretty odd? Not very human."_ If you could not say it out loud to someone, cut it.
+- Keep verbs as verbs. "the implementation of caching" is "caching it", "provides validation of" is "validates". A nominalization is a verb the sentence is hiding, and a reader has to unfreeze it.
+- Every pronoun, and every "this", "that" or "the change", must point at something the reader can name without scrolling. If it has been a paragraph since the noun, repeat the noun.
 - Never open a paragraph with a code block. The sentence that motivates the code comes first. He flagged _"several sentence/paragraphs start with a codeblock... thats not right."_
 
 ## What cutting must not take
@@ -67,6 +69,11 @@ So the cut list is right about what to remove and silent about what to protect. 
 - **The concrete noun.** Compression that turns a named project into "the library" costs the
   reader more than it saves.
 
+**One figure per sentence, and cash it out.** Cutting hard packs a sentence: a metaphor, a verb
+frozen into a noun, and the two set side by side ("the drain holds the whole pipeline hostage").
+Any one of those is fine alone. Two adjacent is what reads as dense. Unpack it by saying it as a
+spoken sentence with the verbs doing the work, and never leave the reader inside a metaphor.
+
 Being under the landing zone is only fine if what is missing is prose. If what is missing is
 the reader's footing, the draft is not concise, it is thin.
 
@@ -78,7 +85,7 @@ _"Just too much prose in one big block, looks very AI."_
 
 Prose is the most expensive form per unit of information and the one a model defaults to. So after the cut list, look at the shape rather than the count:
 
-- Anything that is a list should be a list. Findings, follow-ups, asks, options.
+- Anything that is a list should be a list. Findings, follow-ups, asks, options. The converse holds too: causality and sequence stay in paragraphs, because bullets drop the joints (because, so, then) that carry an argument.
 - A paragraph past roughly 60 words wants to be split, or was never a paragraph.
 - Code, tables and numbers carry more per line than prose and read as human. Prefer them.
 - Two consecutive paragraphs of similar length and rhythm is the pattern to break.

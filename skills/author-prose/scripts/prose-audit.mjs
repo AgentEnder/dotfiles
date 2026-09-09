@@ -106,7 +106,7 @@ for (const [i, text] of texts.entries()) {
   );
 }
 add(
-  'Em dashes (reduce: comma, colon, parens, full stop)',
+  'Em dashes (reduce: comma, parens, full stop)',
   dashRows.sort((a, b) => parseInt(b) - parseInt(a)),
 );
 
@@ -202,6 +202,7 @@ const TICS = [
   'it is worth',
   'worth noting',
   'worth knowing',
+  'honestly',
 ];
 const BUZZ = [
   'delve',
@@ -217,6 +218,8 @@ const BUZZ = [
   'vital',
   'realm',
   'landscape',
+  'crux',
+  'load-bearing',
 ];
 // Absolutes about what something cannot do. A model reaches for the strongest
 // word available; "not yet" is usually the true claim. See MARKERS.md.

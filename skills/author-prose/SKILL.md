@@ -20,7 +20,7 @@ argument-hint: "[path or purpose] - one draft plus who it is for, or paths to sw
 
 Usually you are editing, not writing. The argument, the evidence, and what he wants to say are his. This skill decides how much of it survives and in what register.
 
-Two modes. **One artifact for one reader** is the common one, and the rest of this file is about it. **Sweeping a repo's markdown** is the other: run the audit script and work its findings, per `references/docs.md`.
+There are two modes. **One artifact for one reader** is the common one, and the rest of this file is about it. **Sweeping a repo's markdown** is the other: run the audit script and work its findings, per `references/docs.md`.
 
 ```sh
 node ~/dotfiles/skills/author-prose/scripts/prose-audit.mjs [paths...]
@@ -74,7 +74,7 @@ node ~/dotfiles/skills/author-prose/scripts/prose-audit.mjs [paths...]
 
 **Cut before you polish.** A well-phrased paragraph that the reader does not need is still the problem. `references/conciseness.md` is the largest document here.
 
-**No em dashes.** Not one. He has called them agent slop in as many words, and they are the single loudest tell. A comma, a colon, a period or parentheses always work. His own Linear history is full of them. Those comments were drafted by agents on his behalf, so they show what a model reaches for, not house style. Do not calibrate on them.
+**No em dashes.** Not one. He has called them agent slop in as many words, and they are the single loudest tell. A comma, a period or parentheses always work. A colon only before a literal list or a code block. A colon whose left side labels what the right side does ("the honest fix: ...") is the em dash in a different glyph, and it is what a draft turns into when the dashes are stripped mechanically. His own Linear history is full of them. Those comments were drafted by agents on his behalf, so they show what a model reaches for, not house style. Do not calibrate on them.
 
 Cut these first, in this order:
 
@@ -85,7 +85,7 @@ Cut these first, in this order:
   draft as sounding "horrible". Test: if it would land in a conference talk, cut it.
 - Rules of three. Three adjectives, three parallel clauses, three-item lists that exist for rhythm rather than because there are three things.
 - Your own deliberation. What you considered, verified, ruled out, or found interesting is not content. _"Things I question here don't necessarily need to be in the blog."_
-- Sentences that narrate the document. "Here is what I found", "the following section covers", a closing paragraph that restates the one above it.
+- Sentences that narrate the document. "Here is what I found", "the following section covers", a closing paragraph that restates the one above it. The same habit hides in depth signals ("the real issue underneath", "at a more fundamental level") and in verbless fragments that open a paragraph ("Two things worth watching." "One caution."). Fold the label into the sentence that does the work.
 - Anything the reader cannot act on.
 
 **Simplified technical English.** Short sentences. One clause where two would do. Concrete nouns. He asks for this by name.

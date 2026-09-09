@@ -35,6 +35,7 @@ Sampled from ripgrep's `GUIDE.md`, the `gh` manual and aws-vault's README:
 | Mood            | Imperative ("Run `gh auth login`")            | "You can run", "You'll want to" |
 | Bold            | Rare, reserved for a critical negation        | Bold on every list item         |
 | Editorialising  | Absent. Facts, then stop.                     | "deliberately", "actually"      |
+| Headers         | Labels: `Installation`, `Flags`               | A sentence or a question        |
 
 Representative of the target register:
 
@@ -99,8 +100,9 @@ warning about data loss.
 In the order they tend to show up. The full list, the vocabulary and worked rewrites are in
 [MARKERS.md](../MARKERS.md).
 
-- Em dashes. Default to a comma, colon, parentheses, or full stop. Any bracketing pair is a
-  defect.
+- Em dashes. Default to a comma, parentheses, or full stop. Any bracketing pair is a
+  defect. A colon only before a list or a code block, because a colon whose left side labels
+  the right ("the real cost: ...") is the same tell in a different glyph.
 - Editorialising adverbs: _deliberately, precisely, genuinely, actually, exactly, carefully,
   thoughtfully_. If a choice was deliberate, the reason shows it. Saying "deliberately" asks to
   be believed instead.

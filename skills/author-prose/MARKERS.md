@@ -9,6 +9,9 @@ the word and read the sentence again. If nothing was lost, it was noise.
 delve, tapestry, paramount, pivotal, leverage, showcase, underscore, seamless,
 robust, crucial, vital, landscape, realm.
 
+Also _crux_, _load-bearing_ and _honestly_, which a model uses to signal that
+it has weighed something. State the thing that matters and why.
+
 And the self-congratulatory adverbs: _deliberately, precisely, genuinely,
 exactly, carefully, thoughtfully_. If a design choice was deliberate, the
 reason demonstrates it.
@@ -27,6 +30,24 @@ sentences. Usually deletable with no loss.
 
 "fast, reliable, and secure." Three is what a model produces when it does not
 know how many there are. Say two if there are two, or five if there are five.
+
+## The colon hinge
+
+A sentence whose left side labels what the right side does: "the clear
+shape: ...", "the honest fix: ...", "what you were circling: ...". It is the
+em dash in a different glyph, and it is what a draft turns into when the
+dashes are stripped mechanically. A colon introduces a literal list or a code
+block. Rewrite the rest as two sentences, or join them with because, so, but
+or and.
+
+## Verbless fragments as openers
+
+"Two things worth watching." "The difference." "One caution." The fragment
+names a topic and the next sentence says something about it, so it is the
+announcing habit by other means. Merge the two: "The first thing to watch is
+whether it holds on long threads." Fragments are fine inside parentheses.
+This is also the shape of the over-corrected anti-AI register, so it is a
+tell in both directions.
 
 ## "Not just X, but Y"
 
@@ -88,6 +109,7 @@ limitation or a footgun, say so plainly.
 | `` `aws-vault` — AWS only.``                                       | `` `aws-vault`: AWS only.``                                        |
 | The manager never holds a decision — that's the prompt's job — so… | The manager never holds a decision (that is the prompt's job), so… |
 | Splitting them is the point: the window that interrupts you…       | They are split so the window that interrupts you…                  |
+| The real cost: every box re-resolves the corpus.                   | Every box re-resolves the corpus, so                               |
 | not because typing is nicer but because the flow checks its work   | Prefer this path. The flow checks its work:                        |
 | `3` and `1` are distinct on purpose. A denial is final —           | `3` and `1` are distinct. A denial is final, so                    |
 
